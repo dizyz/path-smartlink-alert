@@ -1,96 +1,58 @@
-import Puppeteer from 'puppeteer';
-import {SMARTLINK_PASSWORD, SMARTLINK_USERNAME} from './@env';
-import {processBalanceText} from './@utils';
+import {PANTRY_ID, SMARTLINK_PASSWORD, SMARTLINK_USERNAME} from './@env';
+import {createOrReplaceBasket, getBasket} from './@pantry';
+import {SmartLink, SmartLinkCard} from './@smartlink';
+import {sendMessage} from './@telegram';
 
-const LOGIN_URL = 'https://www.pathsmartlinkcard.com/front/account/login.jsp';
+const PANTRY_BASKET_NAME = 'smartlink';
 
-interface SmartLinkCard {
-  serialNumber: string;
-  nickname: string;
-  balance: string;
-}
+async function main(): Promise<void> {
+  let smartlink = new SmartLink();
 
-async function main() {
-  let browser = await Puppeteer.launch();
-  const page = await browser.newPage();
+  try {
+    await smartlink.login(SMARTLINK_USERNAME, SMARTLINK_PASSWORD);
 
-  {
-    await page.goto(LOGIN_URL);
+    let data = {
+      cards: smartlink.getCards(),
+    };
 
-    let pageTitle = await page.title();
+    let updated = await updateData(data);
 
-    if (!pageTitle || !pageTitle.includes('SmartLink')) {
-      throw new Error('Invalid page, did not successfully load login page');
+    if (updated) {
+      sendMessage({message: describeCards(data.cards)});
     }
-
-    let usernameInput = await page.$('input[name="username"]');
-    let passwordInput = await page.$('input[name="password"]');
-
-    if (!usernameInput || !passwordInput) {
-      throw new Error('Could not find username or password input');
-    }
-
-    await usernameInput.type(SMARTLINK_USERNAME);
-    await passwordInput.type(SMARTLINK_PASSWORD);
-
-    let loginButton = await page.$('input#login2');
-
-    if (!loginButton) {
-      throw new Error('Could not find login button');
-    }
-
-    await loginButton.click();
+  } finally {
+    await smartlink.close();
   }
-
-  let cards: SmartLinkCard[] = [];
-
-  {
-    await page.waitForNavigation();
-    await page.waitForNetworkIdle();
-
-    let logoutForm = await page.$('form#logout');
-
-    if (!logoutForm) {
-      throw new Error('Failed to log in');
-    }
-
-    let items = await page.$$('#content table tbody tr');
-    for (let [i, item] of items.entries()) {
-      let cols = await item.$$('td');
-
-      if (cols.length <= 3) {
-        continue;
-      }
-
-      const getText = async (index: number) => {
-        let text = String(
-          (await cols[index].evaluate(el => el.textContent)) || '',
-        );
-        return text.trim();
-      };
-
-      let serialNumber = await getText(0);
-      if (!serialNumber) {
-        console.warn(`Could not get serial number for Card #${i}`);
-        continue;
-      }
-      let nickname = await getText(1);
-      let balance = await getText(2);
-      if (!balance) {
-        console.warn(`Could not get balance for Card #${i}`);
-      }
-      balance = processBalanceText(balance);
-      cards.push({
-        serialNumber,
-        nickname,
-        balance,
-      });
-    }
-  }
-
-  console.log(cards);
-
-  await browser.close();
 }
 
 main().catch(console.error);
+
+async function updateData(data: any): Promise<boolean> {
+  try {
+    let oldData = await getBasket<SmartLinkCard[]>(
+      PANTRY_ID,
+      PANTRY_BASKET_NAME,
+    );
+    if (JSON.stringify(data) === JSON.stringify(oldData)) {
+      console.log('No changes to save');
+      return false;
+    }
+  } catch (error) {
+    console.log('Error getting old data:', error);
+  }
+
+  await createOrReplaceBasket(PANTRY_ID, PANTRY_BASKET_NAME, data);
+
+  return true;
+}
+
+function describeCards(cards: SmartLinkCard[]): string {
+  let description = 'Your SmartLink cards:';
+  for (let [i, card] of cards.entries()) {
+    description += '---';
+    description += `\n#${i + 1} ${card.nickname}`;
+    description += `\nSerial: ${card.serialNumber}`;
+    description += `\nBalance: ${card.balance}`;
+  }
+  return description;
+}
