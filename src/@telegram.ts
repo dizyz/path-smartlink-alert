@@ -19,8 +19,10 @@ export async function sendMessage(options: SendMessageOptions) {
   let date = options.date || new Date().toISOString();
 
   await Axios.post(TELEGRAM_SEND_API_ENDPOINT, {
-    message,
-    from,
-    date,
+    message: {
+      body: message,
+      number: from,
+      received: date,
+    },
   });
 }
