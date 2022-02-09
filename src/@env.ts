@@ -1,0 +1,6 @@
+export const SMARTLINK_USERNAME = process.env.SMARTLINK_USERNAME!;
+export const SMARTLINK_PASSWORD = process.env.SMARTLINK_PASSWORD!;
+
+if (!SMARTLINK_USERNAME || !SMARTLINK_PASSWORD) {
+  throw new Error('SMARTLINK_USERNAME or SMARTLINK_PASSWORD is not defined');
+}
