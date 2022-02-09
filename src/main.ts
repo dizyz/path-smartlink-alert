@@ -5,6 +5,11 @@ import {sendMessage} from './@telegram';
 
 const PANTRY_BASKET_NAME = 'smartlink';
 
+interface PantryBasketData {
+  updatedAt: number;
+  cards: SmartLinkCard[];
+}
+
 async function main(): Promise<void> {
   let smartlink = new SmartLink();
 
@@ -27,9 +32,11 @@ async function main(): Promise<void> {
 
 main().catch(console.error);
 
-async function updateData(data: any): Promise<boolean> {
+async function updateData(
+  data: Omit<PantryBasketData, 'updatedAt'>,
+): Promise<boolean> {
   try {
-    let oldData = await getBasket<SmartLinkCard[]>(
+    let {updatedAt, ...oldData} = await getBasket<PantryBasketData>(
       PANTRY_ID,
       PANTRY_BASKET_NAME,
     );
@@ -41,7 +48,16 @@ async function updateData(data: any): Promise<boolean> {
     console.log('Error getting old data:', error);
   }
 
-  await createOrReplaceBasket(PANTRY_ID, PANTRY_BASKET_NAME, data);
+  let newData = {
+    updatedAt: Date.now(),
+    ...data,
+  };
+
+  await createOrReplaceBasket<PantryBasketData>(
+    PANTRY_ID,
+    PANTRY_BASKET_NAME,
+    newData,
+  );
 
   return true;
 }
