@@ -49,7 +49,7 @@ async function updateData(data: any): Promise<boolean> {
 function describeCards(cards: SmartLinkCard[]): string {
   let description = 'Your SmartLink cards:';
   for (let [i, card] of cards.entries()) {
-    description += '---';
+    description += '\n---';
     description += `\n#${i + 1} ${card.nickname}`;
     description += `\nSerial: ${card.serialNumber}`;
     description += `\nBalance: ${card.balance}`;
