@@ -10,24 +10,25 @@ jobs:
   run:
     runs-on: ubuntu-latest
 
-    - uses: actions/setup-node@v2
-      with:
-        node-version: '16'
+    steps:
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
 
-    - uses: actions/cache@v2
-      with:
-        path: '**/node_modules'
-        key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+      - uses: actions/cache@v2
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
 
-    - name: Install dependencies
-      run: |
-        yarn install
+      - name: Install dependencies
+        run: |
+          yarn install
 
-    - name: Run script
-      run: |
-        yarn start
-      env:
-        SMARTLINK_USERNAME: ${{ secrets.SMARTLINK_USERNAME }}
-        SMARTLINK_PASSWORD: ${{ secrets.SMARTLINK_PASSWORD }}
-        PANTRY_ID: ${{ secrets.PANTRY_ID }}
-        TELEGRAM_SEND_API_ENDPOINT: ${{ secrets.TELEGRAM_SEND_API_ENDPOINT }}
+      - name: Run script
+        run: |
+          yarn start
+        env:
+          SMARTLINK_USERNAME: ${{ secrets.SMARTLINK_USERNAME }}
+          SMARTLINK_PASSWORD: ${{ secrets.SMARTLINK_PASSWORD }}
+          PANTRY_ID: ${{ secrets.PANTRY_ID }}
+          TELEGRAM_SEND_API_ENDPOINT: ${{ secrets.TELEGRAM_SEND_API_ENDPOINT }}
