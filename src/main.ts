@@ -1,3 +1,4 @@
+import {AxiosError} from 'axios';
 import {PANTRY_ID, SMARTLINK_PASSWORD, SMARTLINK_USERNAME} from './@env';
 import {createOrReplaceBasket, getBasket} from './@pantry';
 import {SmartLink, SmartLinkCard} from './@smartlink';
@@ -45,6 +46,20 @@ async function updateData(
       return false;
     }
   } catch (error) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'response' in error &&
+      (error as AxiosError).response
+    ) {
+      let response = (error as AxiosError).response!;
+      if (response.status === 429) {
+        console.log(
+          'Too many requests, please wait util next scheduled pipeline run',
+        );
+        return false;
+      }
+    }
     console.log('Error getting old data:', error);
   }
 
