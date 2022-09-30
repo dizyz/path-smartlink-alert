@@ -18,7 +18,7 @@ export class SmartLink {
   private cards: SmartLinkCard[] = [];
 
   async login(username: string, password: string): Promise<void> {
-    this.browser = await Puppeteer.launch();
+    this.browser = await Puppeteer.launch({headless: true});
     this.page = await this.browser.newPage();
 
     let page = this.page;
@@ -54,8 +54,11 @@ export class SmartLink {
     let cards: SmartLinkCard[] = [];
 
     {
-      await page.waitForNavigation();
-      await page.waitForNetworkIdle();
+      try {
+        await page.waitForNetworkIdle({timeout: 5000});
+      } catch (e) {
+        // ignore
+      }
 
       let logoutForm = await page.$('form#logout');
 
@@ -110,7 +113,11 @@ export class SmartLink {
 
     let cards: SmartLinkCard[] = [];
 
-    await page.waitForNetworkIdle();
+    try {
+      await page.waitForNetworkIdle({timeout: 5000});
+    } catch (e) {
+      // ignore
+    }
 
     let logoutForm = await page.$('form#logout');
 

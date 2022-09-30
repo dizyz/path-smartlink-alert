@@ -1,28 +1,9 @@
-import Axios from 'axios';
+import TelegramBot from 'node-telegram-bot-api';
 
-import {TELEGRAM_SEND_API_ENDPOINT} from './@env';
+import {TELEGRAM_BOT_TOKEN, TELEGRAM_USER_ID} from './@env';
 
-export interface SendMessageOptions {
-  from?: string;
-  date?: string;
-  message: string;
-}
+const bot = new TelegramBot(TELEGRAM_BOT_TOKEN);
 
-export async function sendMessage(options: SendMessageOptions) {
-  if (!TELEGRAM_SEND_API_ENDPOINT) {
-    console.warn('TELEGRAM_SEND_API_ENDPOINT is not defined');
-    return;
-  }
-
-  let {message} = options;
-  let from = options.from || 'SmartLink';
-  let date = options.date || new Date().toLocaleString();
-
-  await Axios.post(TELEGRAM_SEND_API_ENDPOINT, {
-    message: {
-      body: message,
-      number: from,
-      received: date,
-    },
-  });
+export async function sendTelegramMessage(message: string): Promise<void> {
+  await bot.sendMessage(TELEGRAM_USER_ID, message, {parse_mode: 'MarkdownV2'});
 }
