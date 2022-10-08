@@ -5,7 +5,12 @@ import {cleanupRedis, get, set} from './@redis';
 import {SmartLink, SmartLinkCard} from './@smartlink';
 import {sendTelegramMessage} from './@telegram';
 
-const REDIS_MESSAGE_KEY = 'smartlink_message';
+const REDIS_DATA_KEY = 'smartlink_data';
+
+interface SmartLinkData {
+  cards: SmartLinkCard[];
+  updatedAt: number;
+}
 
 async function main(): Promise<void> {
   let smartlink = new SmartLink();
@@ -17,10 +22,25 @@ async function main(): Promise<void> {
 
     const message = describeCards(cards);
 
-    const oldMessage = await get(REDIS_MESSAGE_KEY);
+    const oldDataJSON = await get(REDIS_DATA_KEY);
+
+    let oldMessage: string | undefined;
+
+    if (oldDataJSON) {
+      try {
+        let oldData = JSON.parse(oldDataJSON) as SmartLinkData;
+        oldMessage = describeCards(oldData.cards);
+      } catch (e) {
+        // ignore
+      }
+    }
 
     if (oldMessage !== message) {
-      await set(REDIS_MESSAGE_KEY, message);
+      const data: SmartLinkData = {
+        cards,
+        updatedAt: Date.now(),
+      };
+      await set(REDIS_DATA_KEY, JSON.stringify(data));
       await sendTelegramMessage(message);
       console.log(message);
     } else {
